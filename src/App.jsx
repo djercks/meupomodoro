@@ -7,12 +7,12 @@ import Footer from './components/Footer.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import { useTimer } from './hooks/useTimer.js'
 import { useTasks } from './hooks/useTasks.js'
-
-// userId virá do hook de auth (Google OAuth via Supabase) quando esse
-// projeto estiver criado. Até lá, tudo funciona local (null = modo anônimo).
-const userId = null
+import { useAuth } from './hooks/useAuth.js'
 
 export default function App() {
+  const auth = useAuth()
+  const userId = auth.user?.id ?? null
+
   const timer = useTimer(userId)
   const { tasks, addTask, toggleTask, removeTask } = useTasks(userId)
 
@@ -38,7 +38,7 @@ export default function App() {
       <div className="stars" />
       <div className="relative z-10 min-h-screen flex flex-col lg:flex-row gap-6 p-5 sm:p-8">
         <div className="flex-1 flex flex-col">
-          <Header streak={streak} soundOn={timer.soundOn} onToggleSound={() => timer.setSoundOn((s) => !s)} />
+          <Header streak={streak} soundOn={timer.soundOn} onToggleSound={() => timer.setSoundOn((s) => !s)} auth={auth} />
 
           <main className="flex-1 flex flex-col items-center justify-center gap-8 py-10">
             <ModeTabs mode={timer.mode} onChange={timer.setMode} counts={timer.counts} />
