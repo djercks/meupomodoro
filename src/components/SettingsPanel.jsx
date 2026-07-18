@@ -233,22 +233,31 @@ export default function SettingsPanel({ open, onClose, settings, update, setDura
 
             {settings.alarmOn && (
               <>
-                <div className="flex flex-wrap gap-2 pb-2">
-                  {ALARM_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => update({ alarmType: opt.id })}
-                      className={`text-xs px-2.5 py-1 rounded-full transition ${
-                        settings.alarmType === opt.id
-                          ? 'bg-[var(--accent)] text-[#0a0e1a] font-semibold'
-                          : 'glass text-white/60 hover:text-white'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 pb-2">
+                {[
+                  { key: 'focus', label: 'Som do Foco' },
+                  { key: 'short', label: 'Som da Pausa curta' },
+                  { key: 'long', label: 'Som da Pausa longa' },
+                ].map(({ key, label }) => (
+                  <div key={key} className="py-1.5">
+                    <p className="text-xs text-white/60 mb-1.5">{label}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {ALARM_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => update({ alarmTypes: { ...settings.alarmTypes, [key]: opt.id } })}
+                          className={`text-xs px-2.5 py-1 rounded-full transition ${
+                            settings.alarmTypes[key] === opt.id
+                              ? 'bg-[var(--accent)] text-[#0a0e1a] font-semibold'
+                              : 'glass text-white/60 hover:text-white'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 pb-2 pt-1">
                   <span aria-hidden="true">🔊</span>
                   <input
                     type="range"

@@ -23,7 +23,7 @@ const DEFAULTS = {
   autoStartBreak: false,
   autoStartFocus: false,
   alarmOn: true,
-  alarmType: 'digital', // carrilhao | sino | digital
+  alarmTypes: { focus: 'digital', short: 'carrilhao', long: 'sino' }, // carrilhao | sino | digital
   alarmVolume: 0.6,
   accentColor: 'violet',
   backgroundMode: 'preset', // preset | custom
