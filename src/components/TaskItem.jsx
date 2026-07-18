@@ -1,4 +1,4 @@
-export default function TaskItem({ task, onToggle, onRemove, isActive, onSelect, onMove, isFirst, isLast }) {
+export default function TaskItem({ task, onToggle, onRemove, isActive, onSelect, onMove, isFirst, isLast, onAddPomodoro }) {
   const needed = task.pomodoros_needed || 1
   const done = task.pomodoros_done || 0
 
@@ -45,6 +45,17 @@ export default function TaskItem({ task, onToggle, onRemove, isActive, onSelect,
       >
         🍅 {done}/{needed}
       </span>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onAddPomodoro(task.id)
+        }}
+        aria-label="Adicionar mais um pomodoro a esta tarefa"
+        title="+1 pomodoro"
+        className="w-5 h-5 rounded-full glass hover:bg-white/10 flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-white/50 hover:text-white transition"
+      >
+        +
+      </button>
       <button
         onClick={(e) => {
           e.stopPropagation()

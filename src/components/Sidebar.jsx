@@ -11,7 +11,7 @@ function formatEstimate(totalMinutes) {
   return `${h}h ${m}min`
 }
 
-export default function Sidebar({ tasks, onAdd, onToggle, onRemove, onMove, activeTaskId, onSelectTask, focusMinutes = 25 }) {
+export default function Sidebar({ tasks, onAdd, onToggle, onRemove, onMove, onAddPomodoro, activeTaskId, onSelectTask, focusMinutes = 25 }) {
   const [step, setStep] = useState('idle') // idle | title | pomodoros
   const [titleValue, setTitleValue] = useState('')
   const [customPomodoros, setCustomPomodoros] = useState('')
@@ -146,6 +146,7 @@ export default function Sidebar({ tasks, onAdd, onToggle, onRemove, onMove, acti
               onToggle={onToggle}
               onRemove={onRemove}
               onMove={onMove}
+              onAddPomodoro={onAddPomodoro}
               isFirst={i === 0}
               isLast={i === tasks.length - 1}
               isActive={task.id === activeTaskId}

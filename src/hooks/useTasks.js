@@ -104,6 +104,23 @@ export function useTasks(userId = null) {
     [userId]
   )
 
+  // Soma 1 ao total de pomodoros previstos — usado quando a tarefa acaba
+  // exigindo mais tempo do que o planejado originalmente.
+  const addPomodoroToTask = useCallback(
+    async (id) => {
+      setTasks((current) => {
+        const task = current.find((t) => t.id === id)
+        if (!task) return current
+        const newNeeded = (task.pomodoros_needed || 1) + 1
+        if (isSupabaseConfigured && userId) {
+          supabase.from('tasks').update({ pomodoros_needed: newNeeded }).eq('id', id).then()
+        }
+        return current.map((t) => (t.id === id ? { ...t, pomodoros_needed: newNeeded } : t))
+      })
+    },
+    [userId]
+  )
+
   const removeTask = useCallback(
     async (id) => {
       if (isSupabaseConfigured && userId) {
@@ -138,5 +155,15 @@ export function useTasks(userId = null) {
     [userId]
   )
 
-  return { tasks, loading, addTask, toggleTask, completeTask, incrementTaskProgress, removeTask, moveTask }
+  return {
+    tasks,
+    loading,
+    addTask,
+    toggleTask,
+    completeTask,
+    incrementTaskProgress,
+    addPomodoroToTask,
+    removeTask,
+    moveTask,
+  }
 }

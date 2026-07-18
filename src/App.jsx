@@ -40,6 +40,7 @@ export default function App() {
     toggleTask,
     completeTask,
     incrementTaskProgress,
+    addPomodoroToTask,
     removeTask,
     moveTask,
   } = useTasks(userId)
@@ -223,6 +224,7 @@ export default function App() {
           onToggle={toggleTask}
           onRemove={handleRemoveTask}
           onMove={moveTask}
+          onAddPomodoro={addPomodoroToTask}
           activeTaskId={activeTaskId}
           onSelectTask={handleSelectTask}
           focusMinutes={settings.durations.focus}
