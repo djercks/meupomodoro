@@ -14,14 +14,54 @@ body {
   font-family: 'Sora', sans-serif;
 }
 
+:root {
+  --accent: #34e6a8;
+  --accent-rgb: 52, 230, 168;
+}
+
 .app-bg {
   background:
     radial-gradient(circle at 15% 20%, rgba(129, 74, 160, 0.35), transparent 45%),
     radial-gradient(circle at 85% 75%, rgba(22, 120, 120, 0.35), transparent 45%),
     linear-gradient(160deg, #241733 0%, #3a1f3d 45%, #16323a 100%);
+  background-size: cover;
+  background-position: center;
   min-height: 100vh;
   position: relative;
   overflow: hidden;
+}
+
+.app-bg--sunset {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 130, 90, 0.35), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(120, 40, 90, 0.4), transparent 45%),
+    linear-gradient(160deg, #2b1730 0%, #4a2340 45%, #6b2f3a 100%);
+}
+
+.app-bg--ocean {
+  background:
+    radial-gradient(circle at 15% 25%, rgba(40, 140, 200, 0.35), transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(20, 90, 140, 0.4), transparent 45%),
+    linear-gradient(160deg, #0d1f33 0%, #123a4d 45%, #0e2a3a 100%);
+}
+
+.app-bg--forest {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(60, 140, 90, 0.3), transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(30, 90, 60, 0.35), transparent 45%),
+    linear-gradient(160deg, #16241a 0%, #1f3a26 45%, #16332a 100%);
+}
+
+.app-bg--custom {
+  background-size: cover;
+  background-position: center;
+}
+.app-bg--custom::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 8, 20, 0.55);
+  pointer-events: none;
 }
 
 .stars {
@@ -48,6 +88,71 @@ body {
   to { background-position: -480px 480px; }
 }
 
+/* Partículas: pontos pequenos subindo lentamente */
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.particles span {
+  position: absolute;
+  bottom: -10px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(var(--accent-rgb), 0.5);
+  animation: float-up linear infinite;
+}
+@keyframes float-up {
+  from { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.4; }
+  to { transform: translateY(-110vh) translateX(20px); opacity: 0; }
+}
+
+/* Chuva: linhas finas caindo */
+.rain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.rain span {
+  position: absolute;
+  top: -20px;
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, rgba(180, 200, 255, 0.35));
+  animation: fall linear infinite;
+}
+@keyframes fall {
+  from { transform: translateY(-10vh); }
+  to { transform: translateY(110vh); }
+}
+
+/* Bolhas: círculos translúcidos subindo */
+.bubbles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bubbles span {
+  position: absolute;
+  bottom: -40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+  animation: bubble-up linear infinite;
+}
+@keyframes bubble-up {
+  from { transform: translateY(0) scale(0.8); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.3; }
+  to { transform: translateY(-105vh) scale(1.1); opacity: 0; }
+}
+
 .glass {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -55,32 +160,32 @@ body {
 }
 
 .ring-glow {
-  filter: drop-shadow(0 0 18px rgba(52, 230, 168, 0.55)) drop-shadow(0 0 40px rgba(52, 230, 168, 0.25));
+  filter: drop-shadow(0 0 18px rgba(var(--accent-rgb), 0.55)) drop-shadow(0 0 40px rgba(var(--accent-rgb), 0.25));
 }
 
 .btn-start {
-  background: linear-gradient(180deg, #3fe08a, #22c55e);
-  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 85%, white), var(--accent));
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 .btn-start:active {
   transform: translateY(1px);
 }
 
 .pill-active {
-  background: rgba(34, 197, 94, 0.85);
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6);
+  background: rgba(var(--accent-rgb), 0.85);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.6);
 }
 
 ::selection {
-  background: rgba(52, 230, 168, 0.35);
+  background: rgba(var(--accent-rgb), 0.35);
 }
 
 input:focus, button:focus-visible {
-  outline: 2px solid rgba(52, 230, 168, 0.8);
+  outline: 2px solid rgba(var(--accent-rgb), 0.8);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .stars { animation: none; }
+  .stars, .particles span, .rain span, .bubbles span { animation: none !important; }
   * { transition: none !important; animation-duration: 0.001ms !important; }
 }
