@@ -232,7 +232,7 @@ export default function App() {
       {/* Player de música flutuante — fica montado enquanto houver vídeo
           carregado, mesmo com o painel fechado, para não interromper o som. */}
       {music.videoId && (
-        <div className="fixed bottom-5 left-5 z-30 w-[220px] glass !bg-[#1a1226]/95 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="fixed bottom-24 left-5 z-30 w-[220px] glass !bg-[#1a1226]/95 rounded-2xl overflow-hidden shadow-2xl">
           <div className="aspect-video w-full bg-black">
             <div ref={music.containerRef} className="w-full h-full" />
           </div>

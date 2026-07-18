@@ -66,25 +66,34 @@ export function useTimer(userId = null, settings, onComplete) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [durations[mode]])
 
-  const chime = useCallback(() => {
-    if (!alarmOn) return
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)()
-      const peak = 0.05 + alarmVolume * 0.35
-      if (alarmType === 'sino') {
-        playTone(ctx, { freq: 660, start: 0, duration: 1.2, gainPeak: peak })
-        playTone(ctx, { freq: 990, start: 0, duration: 1.0, gainPeak: peak * 0.5 })
-      } else if (alarmType === 'carrilhao') {
-        playTone(ctx, { freq: 523, start: 0, duration: 0.5, gainPeak: peak })
-        playTone(ctx, { freq: 659, start: 0.18, duration: 0.5, gainPeak: peak })
-        playTone(ctx, { freq: 784, start: 0.36, duration: 0.6, gainPeak: peak })
-      } else {
-        playTone(ctx, { freq: 880, start: 0, duration: 0.6, gainPeak: peak })
+  const chime = useCallback(
+    (finishedMode) => {
+      if (!alarmOn) return
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)()
+        const peak = 0.05 + alarmVolume * 0.35
+        // Cada tipo de sessão soa diferente: foco = tom "padrão", pausa
+        // curta = mais aguda e rápida (animada), pausa longa = mais grave
+        // e espaçada (relaxante) — mantendo o timbre escolhido em Configurações.
+        const pitch = finishedMode === 'short' ? 1.25 : finishedMode === 'long' ? 0.75 : 1
+        const pace = finishedMode === 'short' ? 0.8 : finishedMode === 'long' ? 1.3 : 1
+
+        if (alarmType === 'sino') {
+          playTone(ctx, { freq: 660 * pitch, start: 0, duration: 1.2 * pace, gainPeak: peak })
+          playTone(ctx, { freq: 990 * pitch, start: 0, duration: 1.0 * pace, gainPeak: peak * 0.5 })
+        } else if (alarmType === 'carrilhao') {
+          playTone(ctx, { freq: 523 * pitch, start: 0, duration: 0.5 * pace, gainPeak: peak })
+          playTone(ctx, { freq: 659 * pitch, start: 0.18 * pace, duration: 0.5 * pace, gainPeak: peak })
+          playTone(ctx, { freq: 784 * pitch, start: 0.36 * pace, duration: 0.6 * pace, gainPeak: peak })
+        } else {
+          playTone(ctx, { freq: 880 * pitch, start: 0, duration: 0.6 * pace, gainPeak: peak })
+        }
+      } catch {
+        // Web Audio indisponível — ignora
       }
-    } catch {
-      // Web Audio indisponível — ignora
-    }
-  }, [alarmOn, alarmType, alarmVolume])
+    },
+    [alarmOn, alarmType, alarmVolume]
+  )
 
   const warn = useCallback(() => {
     if (!alarmOn) return
@@ -124,7 +133,7 @@ export function useTimer(userId = null, settings, onComplete) {
     clearInterval(intervalRef.current)
     setRunning(false)
     setCounts((c) => ({ ...c, [mode]: c[mode] + 1 }))
-    chime()
+    chime(mode)
     logSession(mode)
     onCompleteRef.current?.(mode)
   }, [mode, chime, logSession])
