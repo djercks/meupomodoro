@@ -32,13 +32,25 @@ const BG_CLASS = {
 export default function App() {
   const auth = useAuth()
   const userId = auth.user?.id ?? null
-  const { settings, update, setDuration, setCustomBackground } = useSettings()
+  const { settings, update, setDuration, setCustomBackground, addMusicUrl, removeMusicUrl } = useSettings()
 
   const timer = useTimer(userId, settings)
   const { tasks, addTask, toggleTask, removeTask } = useTasks(userId)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [musicOpen, setMusicOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [activeTaskId, setActiveTaskId] = useState(null)
+
+  const activeTask = tasks.find((t) => t.id === activeTaskId) || null
+
+  function handleSelectTask(id) {
+    setActiveTaskId((current) => (current === id ? null : id))
+  }
+
+  function handleRemoveTask(id) {
+    if (id === activeTaskId) setActiveTaskId(null)
+    removeTask(id)
+  }
 
   useAmbientSound(settings.ambientSoundType, settings.ambientSoundVolume)
   const music = useYouTubePlayer(settings.musicUrl)
@@ -93,10 +105,25 @@ export default function App() {
             settings={settings}
             update={update}
             music={music}
+            addMusicUrl={addMusicUrl}
+            removeMusicUrl={removeMusicUrl}
           />
 
           <main className="flex-1 flex flex-col items-center justify-center gap-8 py-10">
             <ModeTabs mode={timer.mode} onChange={timer.setMode} counts={timer.counts} />
+            {activeTask && (
+              <span className="glass rounded-full px-4 py-1.5 text-xs flex items-center gap-2 -mb-2">
+                <span aria-hidden="true">🎯</span>
+                Trabalhando em: <span className="font-semibold">{activeTask.title}</span>
+                <button
+                  onClick={() => setActiveTaskId(null)}
+                  aria-label="Limpar tarefa ativa"
+                  className="text-white/40 hover:text-white/70 transition"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
             <TimerRing minutes={timer.minutes} seconds={timer.seconds} progress={timer.progress} label={timer.label} />
             <Controls running={timer.running} onToggle={timer.toggle} onReset={timer.reset} />
             <p className="italic text-white/50 text-sm text-center max-w-xs">
@@ -107,7 +134,15 @@ export default function App() {
           <Footer />
         </div>
 
-        <Sidebar tasks={tasks} onAdd={addTask} onToggle={toggleTask} onRemove={removeTask} />
+        <Sidebar
+          tasks={tasks}
+          onAdd={addTask}
+          onToggle={toggleTask}
+          onRemove={handleRemoveTask}
+          activeTaskId={activeTaskId}
+          onSelectTask={handleSelectTask}
+          focusMinutes={settings.durations.focus}
+        />
       </div>
 
       <SettingsPanel

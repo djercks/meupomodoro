@@ -34,6 +34,7 @@ const DEFAULTS = {
   ambientSoundType: 'off', // off | rain | cafe | white | waves
   ambientSoundVolume: 0.4,
   musicUrl: '',
+  musicHistory: [],
 }
 
 function load() {
@@ -72,5 +73,16 @@ export function useSettings() {
     setSettings((s) => ({ ...s, backgroundMode: 'custom', customBackground: dataUrl }))
   }, [])
 
-  return { settings, update, setDuration, setCustomBackground }
+  const addMusicUrl = useCallback((url) => {
+    setSettings((s) => {
+      const history = [url, ...s.musicHistory.filter((u) => u !== url)].slice(0, 8)
+      return { ...s, musicUrl: url, musicHistory: history }
+    })
+  }, [])
+
+  const removeMusicUrl = useCallback((url) => {
+    setSettings((s) => ({ ...s, musicHistory: s.musicHistory.filter((u) => u !== url) }))
+  }, [])
+
+  return { settings, update, setDuration, setCustomBackground, addMusicUrl, removeMusicUrl }
 }

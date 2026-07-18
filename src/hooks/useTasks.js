@@ -24,21 +24,25 @@ export function useTasks(userId = null) {
   }, [userId])
 
   const addTask = useCallback(
-    async (title) => {
+    async (title, pomodorosNeeded = 1) => {
       const trimmed = title.trim()
       if (!trimmed) return
+      const pomodoros = Math.max(1, Math.round(pomodorosNeeded) || 1)
 
       if (isSupabaseConfigured && userId) {
         const { data, error } = await supabase
           .from('tasks')
-          .insert({ user_id: userId, title: trimmed, completed: false })
+          .insert({ user_id: userId, title: trimmed, completed: false, pomodoros_needed: pomodoros })
           .select()
           .single()
         if (!error && data) setTasks((t) => [...t, data])
         return
       }
 
-      setTasks((t) => [...t, { id: crypto.randomUUID(), title: trimmed, completed: false }])
+      setTasks((t) => [
+        ...t,
+        { id: crypto.randomUUID(), title: trimmed, completed: false, pomodoros_needed: pomodoros },
+      ])
     },
     [userId]
   )

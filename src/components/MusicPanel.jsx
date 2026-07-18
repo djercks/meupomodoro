@@ -8,18 +8,23 @@ const AMBIENT_SOUNDS = [
   { id: 'waves', label: 'Ondas do mar' },
 ]
 
-export default function MusicPanel({ open, onClose, settings, update, music }) {
+export default function MusicPanel({ open, onClose, settings, update, music, addMusicUrl, removeMusicUrl }) {
   const [tab, setTab] = useState('ambiente')
   const [urlInput, setUrlInput] = useState(settings.musicUrl || '')
 
   function handleLoadMusic(e) {
     e.preventDefault()
-    const ok = music.loadUrl(urlInput)
+    loadAndSave(urlInput)
+  }
+
+  function loadAndSave(url) {
+    const ok = music.loadUrl(url)
     if (!ok) {
       alert('Cole um link válido do YouTube.')
       return
     }
-    update({ musicUrl: urlInput })
+    addMusicUrl(url)
+    setUrlInput(url)
   }
 
   if (!open) return null
@@ -103,7 +108,7 @@ export default function MusicPanel({ open, onClose, settings, update, music }) {
               </form>
 
               {music.videoId ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mb-3">
                   <button
                     onClick={music.togglePlay}
                     className="w-9 h-9 rounded-full bg-[var(--accent)] text-[#0a0e1a] flex items-center justify-center flex-shrink-0"
@@ -129,8 +134,35 @@ export default function MusicPanel({ open, onClose, settings, update, music }) {
                   </button>
                 </div>
               ) : (
-                <p className="text-white/40 text-xs">Cole o link de um vídeo do YouTube para tocar.</p>
+                <p className="text-white/40 text-xs mb-3">Cole o link de um vídeo do YouTube para tocar.</p>
               )}
+
+              {settings.musicHistory?.length > 0 && (
+                <div className="mb-1">
+                  <p className="text-[10px] uppercase tracking-wide text-white/40 mb-1.5">Usados recentemente</p>
+                  <ul className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+                    {settings.musicHistory.map((url) => (
+                      <li key={url} className="flex items-center gap-1.5 group">
+                        <button
+                          onClick={() => loadAndSave(url)}
+                          className="flex-1 text-left text-[11px] text-white/60 hover:text-white truncate glass rounded-lg px-2 py-1.5 transition"
+                          title={url}
+                        >
+                          🔗 {url}
+                        </button>
+                        <button
+                          onClick={() => removeMusicUrl(url)}
+                          aria-label="Remover do histórico"
+                          className="text-white/20 hover:text-white/60 transition text-xs opacity-0 group-hover:opacity-100"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <p className="text-white/40 text-xs mt-3">
                 O player continua tocando em segundo plano enquanto você foca.
               </p>

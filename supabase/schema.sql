@@ -11,6 +11,7 @@ create table if not exists pomodoro.tasks (
   user_id uuid references auth.users (id) on delete cascade not null,
   title text not null,
   completed boolean not null default false,
+  pomodoros_needed int not null default 1,
   created_at timestamptz not null default now()
 );
 

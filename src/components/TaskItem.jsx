@@ -1,18 +1,32 @@
-export default function TaskItem({ task, onToggle, onRemove }) {
+export default function TaskItem({ task, onToggle, onRemove, isActive, onSelect }) {
   return (
-    <li className="flex items-center gap-3 bg-white/5 rounded-2xl px-4 py-3 text-sm">
+    <li
+      onClick={() => onSelect(task.id)}
+      className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm cursor-pointer transition ${
+        isActive ? 'bg-[var(--accent)]/15 ring-1 ring-[var(--accent)]' : 'bg-white/5 hover:bg-white/[0.07]'
+      }`}
+    >
       <button
-        onClick={() => onToggle(task.id)}
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggle(task.id)
+        }}
         aria-label="Concluir tarefa"
         className={`w-5 h-5 rounded-full border-2 flex-shrink-0 transition ${
           task.completed ? 'bg-emerald-400 border-emerald-400' : 'border-white/30 hover:border-emerald-400'
         }`}
       />
       <span className={`flex-1 ${task.completed ? 'line-through text-white/40' : ''}`}>{task.title}</span>
+      <span className="text-[10px] glass rounded-full px-2 py-0.5 flex items-center gap-1 flex-shrink-0" title={`${task.pomodoros_needed || 1} pomodoro(s)`}>
+        🍅 {task.pomodoros_needed || 1}
+      </span>
       <button
-        onClick={() => onRemove(task.id)}
+        onClick={(e) => {
+          e.stopPropagation()
+          onRemove(task.id)
+        }}
         aria-label="Remover tarefa"
-        className="text-white/30 hover:text-white/70 transition"
+        className="text-white/30 hover:text-white/70 transition flex-shrink-0"
       >
         ✕
       </button>

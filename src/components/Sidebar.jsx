@@ -1,16 +1,48 @@
 import { useState } from 'react'
 import TaskItem from './TaskItem.jsx'
 
-export default function Sidebar({ tasks, onAdd, onToggle, onRemove }) {
-  const [adding, setAdding] = useState(false)
-  const [value, setValue] = useState('')
+const QUICK_OPTIONS = [1, 2, 3]
 
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!value.trim()) return
-    onAdd(value)
-    setValue('')
+function formatEstimate(totalMinutes) {
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  if (h === 0) return `${m}min`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}min`
+}
+
+export default function Sidebar({ tasks, onAdd, onToggle, onRemove, activeTaskId, onSelectTask, focusMinutes = 25 }) {
+  const [step, setStep] = useState('idle') // idle | title | pomodoros
+  const [titleValue, setTitleValue] = useState('')
+  const [customPomodoros, setCustomPomodoros] = useState('')
+
+  function startAdding() {
+    setStep('title')
   }
+
+  function handleTitleSubmit(e) {
+    e.preventDefault()
+    if (!titleValue.trim()) return
+    setStep('pomodoros')
+  }
+
+  function confirmPomodoros(count) {
+    onAdd(titleValue, count)
+    setTitleValue('')
+    setCustomPomodoros('')
+    setStep('idle')
+  }
+
+  function handleCustomSubmit(e) {
+    e.preventDefault()
+    const n = parseInt(customPomodoros, 10)
+    if (!n || n < 1) return
+    confirmPomodoros(n)
+  }
+
+  const pendingTasks = tasks.filter((t) => !t.completed)
+  const totalPomodoros = pendingTasks.reduce((sum, t) => sum + (t.pomodoros_needed || 1), 0)
+  const estimatedMinutes = totalPomodoros * focusMinutes
 
   return (
     <aside className="w-full lg:w-[380px] glass rounded-3xl p-5 flex flex-col">
@@ -31,21 +63,33 @@ export default function Sidebar({ tasks, onAdd, onToggle, onRemove }) {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="mb-2">
-        {!adding ? (
+      {tasks.length > 0 && (
+        <div className="flex items-center gap-3 text-[11px] text-white/60 glass rounded-2xl px-3 py-2 mb-3">
+          <span>{pendingTasks.length} tarefa{pendingTasks.length !== 1 ? 's' : ''}</span>
+          <span className="w-1 h-1 rounded-full bg-white/20" />
+          <span>🍅 {totalPomodoros}</span>
+          <span className="w-1 h-1 rounded-full bg-white/20" />
+          <span>≈ {formatEstimate(estimatedMinutes)}</span>
+        </div>
+      )}
+
+      <div className="mb-2">
+        {step === 'idle' && (
           <button
             type="button"
-            onClick={() => setAdding(true)}
+            onClick={startAdding}
             className="w-full text-left glass rounded-2xl px-4 py-3 text-sm text-white/60 flex items-center gap-2 hover:bg-white/10 transition"
           >
             <span className="text-emerald-400 font-bold">+</span> Adicionar tarefa
           </button>
-        ) : (
-          <div className="flex gap-2">
+        )}
+
+        {step === 'title' && (
+          <form onSubmit={handleTitleSubmit} className="flex gap-2">
             <input
               autoFocus
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
               type="text"
               placeholder="O que você precisa fazer?"
               className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-sm placeholder-white/40 focus:bg-white/10 transition"
@@ -53,14 +97,57 @@ export default function Sidebar({ tasks, onAdd, onToggle, onRemove }) {
             <button type="submit" className="px-4 rounded-2xl bg-emerald-500 text-[#0a2e1c] font-semibold text-sm hover:brightness-105 transition">
               OK
             </button>
+          </form>
+        )}
+
+        {step === 'pomodoros' && (
+          <div className="glass rounded-2xl p-3">
+            <p className="text-xs text-white/60 mb-2">Quantos pomodoros "{titleValue}" vai precisar?</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {QUICK_OPTIONS.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => confirmPomodoros(n)}
+                  className="w-9 h-9 rounded-full glass hover:bg-white/10 transition text-sm font-semibold"
+                >
+                  {n}
+                </button>
+              ))}
+              <form onSubmit={handleCustomSubmit} className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min="1"
+                  value={customPomodoros}
+                  onChange={(e) => setCustomPomodoros(e.target.value)}
+                  placeholder="+"
+                  className="w-14 bg-white/5 border border-white/10 rounded-full px-2 py-2 text-sm text-center placeholder-white/40 focus:bg-white/10 transition"
+                />
+                <button type="submit" className="text-xs px-2 py-2 rounded-full glass hover:bg-white/10 transition">
+                  OK
+                </button>
+              </form>
+            </div>
+            <button
+              onClick={() => setStep('idle')}
+              className="text-[11px] text-white/40 hover:text-white/70 transition mt-2"
+            >
+              Cancelar
+            </button>
           </div>
         )}
-      </form>
+      </div>
 
       {tasks.length > 0 ? (
         <ul className="flex-1 flex flex-col gap-2 mt-2">
           {tasks.map((task) => (
-            <TaskItem key={task.id} task={task} onToggle={onToggle} onRemove={onRemove} />
+            <TaskItem
+              key={task.id}
+              task={task}
+              onToggle={onToggle}
+              onRemove={onRemove}
+              isActive={task.id === activeTaskId}
+              onSelect={onSelectTask}
+            />
           ))}
         </ul>
       ) : (
