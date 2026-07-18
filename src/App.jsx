@@ -7,10 +7,14 @@ import Footer from './components/Footer.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import SettingsPanel from './components/SettingsPanel.jsx'
 import AmbientEffect from './components/AmbientEffect.jsx'
+import MusicPanel from './components/MusicPanel.jsx'
+import HistoryView from './components/HistoryView.jsx'
 import { useTimer } from './hooks/useTimer.js'
 import { useTasks } from './hooks/useTasks.js'
 import { useAuth } from './hooks/useAuth.js'
 import { useSettings, ACCENT_COLORS } from './hooks/useSettings.js'
+import { useAmbientSound } from './hooks/useAmbientSound.js'
+import { useYouTubePlayer } from './hooks/useYouTubePlayer.js'
 
 function hexToRgb(hex) {
   const clean = hex.replace('#', '')
@@ -33,6 +37,12 @@ export default function App() {
   const timer = useTimer(userId, settings)
   const { tasks, addTask, toggleTask, removeTask } = useTasks(userId)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [musicOpen, setMusicOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+
+  useAmbientSound(settings.ambientSoundType, settings.ambientSoundVolume)
+  const music = useYouTubePlayer(settings.musicUrl)
+  const musicActive = settings.ambientSoundType !== 'off' || Boolean(music.videoId)
 
   const streak = timer.counts.focus > 0 ? Math.max(1, timer.counts.focus) : 1
 
@@ -70,10 +80,19 @@ export default function App() {
         <div className="flex-1 flex flex-col">
           <Header
             streak={streak}
-            alarmOn={settings.alarmOn}
-            onToggleAlarm={() => update({ alarmOn: !settings.alarmOn })}
             auth={auth}
             onOpenSettings={() => setSettingsOpen(true)}
+            onOpenHistory={() => setHistoryOpen(true)}
+            onToggleMusic={() => setMusicOpen((v) => !v)}
+            musicActive={musicActive}
+          />
+
+          <MusicPanel
+            open={musicOpen}
+            onClose={() => setMusicOpen(false)}
+            settings={settings}
+            update={update}
+            music={music}
           />
 
           <main className="flex-1 flex flex-col items-center justify-center gap-8 py-10">
@@ -99,6 +118,40 @@ export default function App() {
         setDuration={setDuration}
         setCustomBackground={setCustomBackground}
       />
+
+      <HistoryView
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        userId={userId}
+        isSupabaseConfigured={auth.isSupabaseConfigured}
+      />
+
+      {/* Player de música flutuante — fica montado enquanto houver vídeo
+          carregado, mesmo com o painel fechado, para não interromper o som. */}
+      {music.videoId && (
+        <div className="fixed bottom-5 left-5 z-30 w-[220px] glass !bg-[#1a1226]/95 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="aspect-video w-full bg-black">
+            <div ref={music.containerRef} className="w-full h-full" />
+          </div>
+          <div className="flex items-center gap-2 p-2">
+            <button
+              onClick={music.togglePlay}
+              className="w-8 h-8 rounded-full bg-[var(--accent)] text-[#0a0e1a] flex items-center justify-center flex-shrink-0"
+              aria-label={music.playing ? 'Pausar música' : 'Tocar música'}
+            >
+              {music.playing ? '⏸' : '▶'}
+            </button>
+            <span className="text-[10px] text-white/50 flex-1 truncate">Tocando música</span>
+            <button
+              onClick={music.stopAndClear}
+              aria-label="Fechar player"
+              className="text-white/40 hover:text-white/70 transition text-xs px-1"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

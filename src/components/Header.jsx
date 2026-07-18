@@ -1,4 +1,4 @@
-export default function Header({ streak, alarmOn, onToggleAlarm, auth, onOpenSettings }) {
+export default function Header({ streak, auth, onOpenSettings, onOpenHistory, onToggleMusic, musicActive }) {
   return (
     <header className="flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -45,18 +45,34 @@ export default function Header({ streak, alarmOn, onToggleAlarm, auth, onOpenSet
         )}
 
         <button
-          onClick={onToggleAlarm}
-          aria-label="Alternar alarme"
-          aria-pressed={alarmOn}
-          title={alarmOn ? 'Alarme ligado' : 'Alarme desligado'}
+          onClick={onOpenHistory}
+          aria-label="Histórico de produtividade"
+          title="Histórico"
           className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-white/10 transition"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
+        </button>
+
+        <button
+          onClick={onToggleMusic}
+          aria-label="Música e som ambiente"
+          title="Música e som ambiente"
+          className={`w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-white/10 transition relative ${
+            musicActive ? 'ring-1 ring-[var(--accent)]' : ''
+          }`}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 18V5l12-2v13" />
             <circle cx="6" cy="18" r="3" />
             <circle cx="18" cy="16" r="3" />
-            {!alarmOn && <line x1="2" y1="2" x2="22" y2="22" strokeWidth="2" />}
           </svg>
+          {musicActive && (
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+          )}
         </button>
 
         <button aria-label="Idioma" className="h-10 px-3 rounded-full glass flex items-center gap-1.5 text-sm font-medium hover:bg-white/10 transition">

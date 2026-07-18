@@ -31,6 +31,9 @@ const DEFAULTS = {
   customBackground: null, // data URL
   ambientEffect: 'stars', // off | particles | stars | rain | bubbles
   notificationsEnabled: false,
+  ambientSoundType: 'off', // off | rain | cafe | white | waves
+  ambientSoundVolume: 0.4,
+  musicUrl: '',
 }
 
 function load() {
