@@ -14,7 +14,7 @@ import { useTasks } from './hooks/useTasks.js'
 import { useAuth } from './hooks/useAuth.js'
 import { useSettings, ACCENT_COLORS } from './hooks/useSettings.js'
 import { useAmbientSound } from './hooks/useAmbientSound.js'
-import { useYouTubePlayer } from './hooks/useYouTubePlayer.js'
+import { useYouTubePlayer, extractYouTubeId } from './hooks/useYouTubePlayer.js'
 
 function hexToRgb(hex) {
   const clean = hex.replace('#', '')
@@ -32,7 +32,7 @@ const BG_CLASS = {
 export default function App() {
   const auth = useAuth()
   const userId = auth.user?.id ?? null
-  const { settings, update, setDuration, setCustomBackground, addMusicUrl, removeMusicUrl } = useSettings()
+  const { settings, update, setDuration, setCustomBackground, assignModeUrl, removeMusicUrl } = useSettings()
 
   const {
     tasks,
@@ -107,11 +107,26 @@ export default function App() {
     removeTask(id)
   }
 
-  // Som ambiente e música só tocam enquanto o timer está rodando — pausam
-  // junto com a sessão e voltam quando ela é retomada.
+  // Som ambiente toca em paralelo, enquanto o timer está rodando.
   useAmbientSound(timer.running ? settings.ambientSoundType : 'off', settings.ambientSoundVolume)
-  const music = useYouTubePlayer(settings.musicUrl)
+
+  // Música: cada tipo de sessão (foco/pausa curta/pausa longa) pode ter um
+  // link do YouTube vinculado. Ao trocar de fase, troca a música sozinha —
+  // como é um único player, a anterior para automaticamente.
+  const music = useYouTubePlayer()
   const musicActive = settings.ambientSoundType !== 'off' || Boolean(music.videoId)
+
+  useEffect(() => {
+    if (!timer.running) return
+    const url = settings.musicUrls?.[timer.mode] || ''
+    const desiredId = extractYouTubeId(url)
+    if (desiredId && desiredId !== music.videoId) {
+      music.loadUrl(url)
+    } else if (!desiredId && music.videoId) {
+      music.stopAndClear()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer.mode, timer.running])
 
   useEffect(() => {
     if (!music.videoId) return
@@ -169,8 +184,9 @@ export default function App() {
             settings={settings}
             update={update}
             music={music}
-            addMusicUrl={addMusicUrl}
+            assignModeUrl={assignModeUrl}
             removeMusicUrl={removeMusicUrl}
+            currentMode={timer.mode}
           />
 
           <main className="flex-1 flex flex-col items-center justify-center gap-8 py-10">
@@ -244,7 +260,9 @@ export default function App() {
             >
               {music.playing ? '⏸' : '▶'}
             </button>
-            <span className="text-[10px] text-white/50 flex-1 truncate">Tocando música</span>
+            <span className="text-[10px] text-white/50 flex-1 truncate">
+              Tocando: {timer.label.replace('Sessão de ', '')}
+            </span>
             <button
               onClick={music.stopAndClear}
               aria-label="Fechar player"

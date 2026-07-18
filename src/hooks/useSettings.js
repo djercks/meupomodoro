@@ -33,7 +33,7 @@ const DEFAULTS = {
   notificationsEnabled: false,
   ambientSoundType: 'off', // off | rain | cafe | white | waves
   ambientSoundVolume: 0.4,
-  musicUrl: '',
+  musicUrls: { focus: '', short: '', long: '' },
   musicHistory: [],
 }
 
@@ -73,10 +73,10 @@ export function useSettings() {
     setSettings((s) => ({ ...s, backgroundMode: 'custom', customBackground: dataUrl }))
   }, [])
 
-  const addMusicUrl = useCallback((url) => {
+  const assignModeUrl = useCallback((mode, url) => {
     setSettings((s) => {
       const history = [url, ...s.musicHistory.filter((u) => u !== url)].slice(0, 8)
-      return { ...s, musicUrl: url, musicHistory: history }
+      return { ...s, musicUrls: { ...s.musicUrls, [mode]: url }, musicHistory: history }
     })
   }, [])
 
@@ -84,5 +84,5 @@ export function useSettings() {
     setSettings((s) => ({ ...s, musicHistory: s.musicHistory.filter((u) => u !== url) }))
   }, [])
 
-  return { settings, update, setDuration, setCustomBackground, addMusicUrl, removeMusicUrl }
+  return { settings, update, setDuration, setCustomBackground, assignModeUrl, removeMusicUrl }
 }

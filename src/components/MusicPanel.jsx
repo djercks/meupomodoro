@@ -8,23 +8,29 @@ const AMBIENT_SOUNDS = [
   { id: 'waves', label: 'Ondas do mar' },
 ]
 
-export default function MusicPanel({ open, onClose, settings, update, music, addMusicUrl, removeMusicUrl }) {
-  const [tab, setTab] = useState('ambiente')
-  const [urlInput, setUrlInput] = useState(settings.musicUrl || '')
+const MODE_TABS = [
+  { id: 'focus', label: 'Foco' },
+  { id: 'short', label: 'Pausa curta' },
+  { id: 'long', label: 'Pausa longa' },
+]
 
-  function handleLoadMusic(e) {
-    e.preventDefault()
-    loadAndSave(urlInput)
+export default function MusicPanel({ open, onClose, settings, update, music, assignModeUrl, removeMusicUrl, currentMode }) {
+  const [tab, setTab] = useState('ambiente')
+  const [musicMode, setMusicMode] = useState('focus')
+  const [urlInput, setUrlInput] = useState(settings.musicUrls[musicMode] || '')
+
+  function selectMusicMode(id) {
+    setMusicMode(id)
+    setUrlInput(settings.musicUrls[id] || '')
   }
 
-  function loadAndSave(url) {
-    const ok = music.loadUrl(url)
-    if (!ok) {
-      alert('Cole um link válido do YouTube.')
+  function handleSave(e) {
+    e.preventDefault()
+    if (!urlInput.trim()) {
+      assignModeUrl(musicMode, '')
       return
     }
-    addMusicUrl(url)
-    setUrlInput(url)
+    assignModeUrl(musicMode, urlInput.trim())
   }
 
   if (!open) return null
@@ -86,12 +92,32 @@ export default function MusicPanel({ open, onClose, settings, update, music, add
                 </div>
               )}
               <p className="text-white/40 text-xs mt-3">
-                Som gerado no navegador — continua tocando mesmo com este painel fechado.
+                Toca em paralelo com a música, enquanto o timer estiver rodando.
               </p>
             </>
           ) : (
             <>
-              <form onSubmit={handleLoadMusic} className="flex gap-2 mb-3">
+              <p className="text-[10px] uppercase tracking-wide text-white/40 mb-1.5">
+                Vincular link por tipo de sessão
+              </p>
+              <div className="flex items-center gap-1 mb-3 glass rounded-full p-1">
+                {MODE_TABS.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => selectMusicMode(m.id)}
+                    className={`flex-1 text-[11px] py-1.5 rounded-full transition relative ${
+                      musicMode === m.id ? 'bg-[var(--accent)] text-[#0a0e1a] font-semibold' : 'text-white/60 hover:text-white'
+                    }`}
+                  >
+                    {m.label}
+                    {currentMode === m.id && (
+                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleSave} className="flex gap-2 mb-3">
                 <input
                   type="text"
                   value={urlInput}
@@ -103,48 +129,31 @@ export default function MusicPanel({ open, onClose, settings, update, music, add
                   type="submit"
                   className="px-3 rounded-full bg-[var(--accent)] text-[#0a0e1a] font-semibold text-xs hover:brightness-105 transition"
                 >
-                  Carregar
+                  Salvar
                 </button>
               </form>
 
-              {music.videoId ? (
-                <div className="flex items-center gap-3 mb-3">
-                  <button
-                    onClick={music.togglePlay}
-                    className="w-9 h-9 rounded-full bg-[var(--accent)] text-[#0a0e1a] flex items-center justify-center flex-shrink-0"
-                    aria-label={music.playing ? 'Pausar música' : 'Tocar música'}
-                  >
-                    {music.playing ? '⏸' : '▶'}
-                  </button>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    defaultValue="70"
-                    onChange={(e) => music.setVolume(Number(e.target.value))}
-                    className="flex-1 accent-[var(--accent)]"
-                    aria-label="Volume da música"
-                  />
-                  <button
-                    onClick={music.stopAndClear}
-                    aria-label="Remover música"
-                    className="text-white/40 hover:text-white/70 transition text-xs"
-                  >
-                    ✕
-                  </button>
-                </div>
+              {settings.musicUrls[musicMode] ? (
+                <p className="text-[11px] text-white/50 truncate mb-3" title={settings.musicUrls[musicMode]}>
+                  🔗 vinculado — toca automaticamente na {MODE_TABS.find((m) => m.id === musicMode)?.label.toLowerCase()}
+                </p>
               ) : (
-                <p className="text-white/40 text-xs mb-3">Cole o link de um vídeo do YouTube para tocar.</p>
+                <p className="text-[11px] text-white/40 mb-3">
+                  Nenhum link vinculado a {MODE_TABS.find((m) => m.id === musicMode)?.label.toLowerCase()} ainda.
+                </p>
               )}
 
               {settings.musicHistory?.length > 0 && (
                 <div className="mb-1">
                   <p className="text-[10px] uppercase tracking-wide text-white/40 mb-1.5">Usados recentemente</p>
-                  <ul className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+                  <ul className="flex flex-col gap-1 max-h-28 overflow-y-auto">
                     {settings.musicHistory.map((url) => (
                       <li key={url} className="flex items-center gap-1.5 group">
                         <button
-                          onClick={() => loadAndSave(url)}
+                          onClick={() => {
+                            setUrlInput(url)
+                            assignModeUrl(musicMode, url)
+                          }}
                           className="flex-1 text-left text-[11px] text-white/60 hover:text-white truncate glass rounded-lg px-2 py-1.5 transition"
                           title={url}
                         >
@@ -164,7 +173,7 @@ export default function MusicPanel({ open, onClose, settings, update, music, add
               )}
 
               <p className="text-white/40 text-xs mt-3">
-                O player continua tocando em segundo plano enquanto você foca.
+                Ao trocar de fase, a música muda sozinha — só uma toca por vez.
               </p>
             </>
           )}
