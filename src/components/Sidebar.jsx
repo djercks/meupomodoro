@@ -11,7 +11,7 @@ function formatEstimate(totalMinutes) {
   return `${h}h ${m}min`
 }
 
-export default function Sidebar({ tasks, onAdd, onToggle, onRemove, activeTaskId, onSelectTask, focusMinutes = 25 }) {
+export default function Sidebar({ tasks, onAdd, onToggle, onRemove, onMove, activeTaskId, onSelectTask, focusMinutes = 25 }) {
   const [step, setStep] = useState('idle') // idle | title | pomodoros
   const [titleValue, setTitleValue] = useState('')
   const [customPomodoros, setCustomPomodoros] = useState('')
@@ -139,12 +139,15 @@ export default function Sidebar({ tasks, onAdd, onToggle, onRemove, activeTaskId
 
       {tasks.length > 0 ? (
         <ul className="flex-1 flex flex-col gap-2 mt-2">
-          {tasks.map((task) => (
+          {tasks.map((task, i) => (
             <TaskItem
               key={task.id}
               task={task}
               onToggle={onToggle}
               onRemove={onRemove}
+              onMove={onMove}
+              isFirst={i === 0}
+              isLast={i === tasks.length - 1}
               isActive={task.id === activeTaskId}
               onSelect={onSelectTask}
             />

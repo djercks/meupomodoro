@@ -12,6 +12,8 @@ create table if not exists pomodoro.tasks (
   title text not null,
   completed boolean not null default false,
   pomodoros_needed int not null default 1,
+  pomodoros_done int not null default 0,
+  position int not null default 0,
   created_at timestamptz not null default now()
 );
 

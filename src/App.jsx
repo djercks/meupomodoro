@@ -34,17 +34,72 @@ export default function App() {
   const userId = auth.user?.id ?? null
   const { settings, update, setDuration, setCustomBackground, addMusicUrl, removeMusicUrl } = useSettings()
 
-  const timer = useTimer(userId, settings)
-  const { tasks, addTask, toggleTask, removeTask } = useTasks(userId)
+  const {
+    tasks,
+    addTask,
+    toggleTask,
+    completeTask,
+    incrementTaskProgress,
+    removeTask,
+    moveTask,
+  } = useTasks(userId)
+
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [musicOpen, setMusicOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [activeTaskId, setActiveTaskId] = useState(null)
 
+  // Decide o que acontece quando uma sessão termina. Se houver uma tarefa
+  // ativa com N pomodoros previstos, encadeia automaticamente:
+  // foco → pausa curta → foco → ... → pausa longa → próxima tarefa pendente.
+  // Sem tarefa ativa, cai nos toggles simples "início automático" das
+  // Configurações.
+  function handleSessionComplete(finishedMode) {
+    if (finishedMode === 'focus') {
+      const task = activeTaskId ? tasks.find((t) => t.id === activeTaskId) : null
+      if (task) {
+        incrementTaskProgress(task.id)
+        const doneCount = (task.pomodoros_done || 0) + 1
+        if (doneCount < (task.pomodoros_needed || 1)) {
+          timer.setMode('short', true)
+        } else {
+          completeTask(task.id)
+          timer.setMode('long', true)
+        }
+      } else if (settings.autoStartBreak) {
+        timer.setMode('short', true)
+      }
+    } else if (finishedMode === 'short') {
+      if (activeTaskId) {
+        timer.setMode('focus', true)
+      } else if (settings.autoStartFocus) {
+        timer.setMode('focus', true)
+      }
+    } else if (finishedMode === 'long') {
+      if (activeTaskId) {
+        const next = tasks.find((t) => !t.completed && t.id !== activeTaskId)
+        if (next) {
+          setActiveTaskId(next.id)
+          timer.setMode('focus', true)
+        } else {
+          setActiveTaskId(null)
+          timer.setMode('focus', false)
+        }
+      } else if (settings.autoStartFocus) {
+        timer.setMode('focus', true)
+      }
+    }
+  }
+
+  const timer = useTimer(userId, settings, handleSessionComplete)
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null
 
   function handleSelectTask(id) {
-    setActiveTaskId((current) => (current === id ? null : id))
+    const next = activeTaskId === id ? null : id
+    setActiveTaskId(next)
+    if (next && !timer.running && timer.mode !== 'focus') {
+      timer.setMode('focus', false)
+    }
   }
 
   function handleRemoveTask(id) {
@@ -52,9 +107,18 @@ export default function App() {
     removeTask(id)
   }
 
-  useAmbientSound(settings.ambientSoundType, settings.ambientSoundVolume)
+  // Som ambiente e música só tocam enquanto o timer está rodando — pausam
+  // junto com a sessão e voltam quando ela é retomada.
+  useAmbientSound(timer.running ? settings.ambientSoundType : 'off', settings.ambientSoundVolume)
   const music = useYouTubePlayer(settings.musicUrl)
   const musicActive = settings.ambientSoundType !== 'off' || Boolean(music.videoId)
+
+  useEffect(() => {
+    if (!music.videoId) return
+    if (timer.running && !music.playing) music.togglePlay()
+    if (!timer.running && music.playing) music.togglePlay()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer.running, music.videoId])
 
   const streak = timer.counts.focus > 0 ? Math.max(1, timer.counts.focus) : 1
 
@@ -71,7 +135,7 @@ export default function App() {
   }, [timer])
 
   useEffect(() => {
-    document.title = `${timer.minutes}:${timer.seconds} · Pomodoro Timer`
+    document.title = `${timer.minutes}:${timer.seconds} · Pomodoro Flainer`
   }, [timer.minutes, timer.seconds])
 
   const accentHex = ACCENT_COLORS.find((c) => c.id === settings.accentColor)?.hex ?? '#34e6a8'
@@ -115,6 +179,9 @@ export default function App() {
               <span className="glass rounded-full px-4 py-1.5 text-xs flex items-center gap-2 -mb-2">
                 <span aria-hidden="true">🎯</span>
                 Trabalhando em: <span className="font-semibold">{activeTask.title}</span>
+                <span className="text-white/40">
+                  ({activeTask.pomodoros_done || 0}/{activeTask.pomodoros_needed || 1})
+                </span>
                 <button
                   onClick={() => setActiveTaskId(null)}
                   aria-label="Limpar tarefa ativa"
@@ -125,7 +192,7 @@ export default function App() {
               </span>
             )}
             <TimerRing minutes={timer.minutes} seconds={timer.seconds} progress={timer.progress} label={timer.label} />
-            <Controls running={timer.running} onToggle={timer.toggle} onReset={timer.reset} />
+            <Controls running={timer.running} onToggle={timer.toggle} onReset={timer.reset} onFinish={timer.finishNow} />
             <p className="italic text-white/50 text-sm text-center max-w-xs">
               "Foco é decidir quais coisas você não vai fazer."
             </p>
@@ -139,6 +206,7 @@ export default function App() {
           onAdd={addTask}
           onToggle={toggleTask}
           onRemove={handleRemoveTask}
+          onMove={moveTask}
           activeTaskId={activeTaskId}
           onSelectTask={handleSelectTask}
           focusMinutes={settings.durations.focus}

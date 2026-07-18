@@ -21,29 +21,46 @@ function playTone(ctx, { freq, start, duration, gainPeak }) {
   osc.stop(t0 + duration)
 }
 
-// Quando o Supabase estiver configurado, cada sessão concluída pode ser
-// gravada na tabela `sessions` (ver supabase/schema.sql) para alimentar
-// o streak e o histórico. Passe userId assim que a auth estiver pronta.
-//
-// `settings` vem do useSettings(): durações, alarme e início automático
-// são todos controláveis pelo painel de Configurações.
-export function useTimer(userId = null, settings) {
+// Toca um "apito" curto e ascendente — usado no aviso de 1 minuto restante.
+function playWarning(ctx, gainPeak) {
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  osc.type = 'sine'
+  const t0 = ctx.currentTime
+  osc.frequency.setValueAtTime(700, t0)
+  osc.frequency.exponentialRampToValueAtTime(1200, t0 + 0.15)
+  gain.gain.setValueAtTime(0.0001, t0)
+  gain.gain.exponentialRampToValueAtTime(gainPeak, t0 + 0.03)
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22)
+  osc.start(t0)
+  osc.stop(t0 + 0.25)
+}
+
+// `onComplete(finishedMode)` é chamado sempre que uma sessão termina (seja
+// por zerar o tempo, seja pelo botão "Concluir"). Quem chama useTimer decide
+// o que acontece a seguir (auto-encadear pomodoros de uma tarefa, avançar
+// pra próxima tarefa, ou não fazer nada) — o timer em si não sabe de tarefas.
+export function useTimer(userId = null, settings, onComplete) {
   const durations = settings?.durations ?? { focus: 25, short: 5, long: 15 }
   const alarmOn = settings?.alarmOn ?? true
   const alarmType = settings?.alarmType ?? 'digital'
   const alarmVolume = settings?.alarmVolume ?? 0.6
-  const autoStartBreak = settings?.autoStartBreak ?? false
-  const autoStartFocus = settings?.autoStartFocus ?? false
 
   const [mode, setModeState] = useState('short')
   const [remaining, setRemaining] = useState(durations.short * 60)
   const [running, setRunning] = useState(false)
   const [counts, setCounts] = useState({ focus: 0, short: 0, long: 0 })
   const intervalRef = useRef(null)
+  const warnedRef = useRef(false)
+  const onCompleteRef = useRef(onComplete)
   const totalSeconds = durations[mode] * 60
 
-  // Se a pessoa mudar a duração no painel enquanto o timer está parado,
-  // reflete a mudança no tempo restante.
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
+
   useEffect(() => {
     if (!running) setRemaining(durations[mode] * 60)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -65,9 +82,19 @@ export function useTimer(userId = null, settings) {
         playTone(ctx, { freq: 880, start: 0, duration: 0.6, gainPeak: peak })
       }
     } catch {
-      // Web Audio indisponível (ex: navegador bloqueando autoplay) — ignora
+      // Web Audio indisponível — ignora
     }
   }, [alarmOn, alarmType, alarmVolume])
+
+  const warn = useCallback(() => {
+    if (!alarmOn) return
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      playWarning(ctx, 0.05 + alarmVolume * 0.3)
+    } catch {
+      // Web Audio indisponível — ignora
+    }
+  }, [alarmOn, alarmVolume])
 
   const logSession = useCallback(
     async (finishedMode) => {
@@ -85,6 +112,7 @@ export function useTimer(userId = null, settings) {
   const setMode = useCallback(
     (newMode, autoStart = false) => {
       clearInterval(intervalRef.current)
+      warnedRef.current = false
       setModeState(newMode)
       setRemaining(durations[newMode] * 60)
       setRunning(autoStart)
@@ -93,36 +121,43 @@ export function useTimer(userId = null, settings) {
   )
 
   const complete = useCallback(() => {
+    clearInterval(intervalRef.current)
     setRunning(false)
     setCounts((c) => ({ ...c, [mode]: c[mode] + 1 }))
     chime()
     logSession(mode)
+    onCompleteRef.current?.(mode)
+  }, [mode, chime, logSession])
 
-    if (mode === 'focus' && autoStartBreak) {
-      setMode('short', true)
-    } else if ((mode === 'short' || mode === 'long') && autoStartFocus) {
-      setMode('focus', true)
-    }
-  }, [mode, chime, logSession, autoStartBreak, autoStartFocus, setMode])
+  // Termina a sessão atual imediatamente, mesmo com tempo sobrando —
+  // usado pelo botão "Concluir" quando a tarefa acaba antes do previsto.
+  const finishNow = useCallback(() => {
+    complete()
+  }, [complete])
 
   useEffect(() => {
     if (!running) return
     intervalRef.current = setInterval(() => {
       setRemaining((r) => {
         if (r <= 1) {
-          clearInterval(intervalRef.current)
           complete()
           return 0
         }
-        return r - 1
+        const next = r - 1
+        if (next === 60 && !warnedRef.current) {
+          warnedRef.current = true
+          warn()
+        }
+        return next
       })
     }, 1000)
     return () => clearInterval(intervalRef.current)
-  }, [running, complete])
+  }, [running, complete, warn])
 
   const toggle = useCallback(() => setRunning((r) => !r), [])
   const reset = useCallback(() => {
     clearInterval(intervalRef.current)
+    warnedRef.current = false
     setRunning(false)
     setRemaining(totalSeconds)
   }, [totalSeconds])
@@ -140,6 +175,7 @@ export function useTimer(userId = null, settings) {
     running,
     toggle,
     reset,
+    finishNow,
     counts,
     label: LABELS[mode],
   }

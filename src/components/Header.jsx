@@ -2,7 +2,7 @@ export default function Header({ streak, auth, onOpenSettings, onOpenHistory, on
   return (
     <header className="flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">Pomodoro Timer</h1>
+        <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">POMODORO FLAINER</h1>
         <span className="flex items-center gap-1 text-sm font-semibold glass rounded-full px-3 py-1">
           <span aria-hidden="true">🔥</span>
           <span>{streak}</span>
@@ -73,14 +73,6 @@ export default function Header({ streak, auth, onOpenSettings, onOpenHistory, on
           {musicActive && (
             <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
           )}
-        </button>
-
-        <button aria-label="Idioma" className="h-10 px-3 rounded-full glass flex items-center gap-1.5 text-sm font-medium hover:bg-white/10 transition">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z" />
-          </svg>
-          PT
         </button>
 
         <button
